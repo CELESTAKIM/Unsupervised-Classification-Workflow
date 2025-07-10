@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Geospatial Analysis: Unsupervised Classification Workflow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --accent-color: #28a745;
+            --background-light: #f8f9fa;
+            --background-dark: #e9ecef;
+            --text-color: #343a40;
+            --heading-color: #0056b3;
+            --border-color: #dee2e6;
+            --shadow-light: rgba(0, 0, 0, 0.05);
+            --shadow-medium: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.7;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-light);
+            color: var(--text-color);
+            scroll-behavior: smooth;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 30px auto;
+            background: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px var(--shadow-medium);
+            animation: fadeIn 1s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 3.2em;
+            color: var(--heading-color);
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        header p {
+            font-size: 1.2em;
+            color: var(--secondary-color);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        h2, h3 {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--heading-color);
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h2 {
+            font-size: 2.2em;
+            border-left: 8px solid var(--primary-color);
+            padding-left: 15px;
+            animation: slideInLeft 0.8s ease-out;
+        }
+
+        h3 {
+            font-size: 1.6em;
+            color: var(--primary-color);
+            border-bottom: none;
+            position: relative;
+            padding-bottom: 5px;
+        }
+
+        h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 50px;
+            height: 3px;
+            background-color: var(--accent-color);
+            border-radius: 2px;
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .step {
+            background-color: var(--background-dark);
+            border-left: 6px solid var(--primary-color);
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px var(--shadow-light);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px var(--shadow-medium);
+        }
+
+        .step::before {
+            content: counter(step-counter);
+            counter-increment: step-counter;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4em;
+            font-weight: bold;
+            box-shadow: 0 2px 5px var(--shadow-medium);
+        }
+
+        .step img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 2px 8px var(--shadow-light);
+            transition: transform 0.4s ease;
+        }
+
+        .step img:hover {
+            transform: scale(1.02);
+        }
+
+        .caption {
+            font-size: 0.9em;
+            color: var(--secondary-color);
+            text-align: center;
+            margin-top: -10px;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 8px var(--shadow-light);
+            border-radius: 8px;
+            overflow: hidden; /* Ensures border-radius is applied to children */
+        }
+        table, th, td {
+            border: 1px solid var(--border-color);
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+        }
+        tr:nth-child(even) {
+            background-color: var(--background-dark);
+        }
+        tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        .highlight {
+            background-color: rgba(0, 123, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.85em;
+            color: var(--secondary-color);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                margin: 15px;
+                padding: 20px;
+            }
+            header h1 {
+                font-size: 2.5em;
+            }
+            h2 {
+                font-size: 1.8em;
+            }
+            h3 {
+                font-size: 1.3em;
+            }
+            .step::before {
+                width: 30px;
+                height: 30px;
+                font-size: 1.1em;
+            }
+        }
+
+        /* WhatsApp Button Styles */
+        .whatsapp-button-container {
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        .whatsapp-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #25D366; /* WhatsApp Green */
+            color: white;
+            padding: 12px 25px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-family: 'Roboto', sans-serif;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .whatsapp-button:hover {
+            background-color: #1DA851;
+            transform: translateY(-2px);
+        }
+
+        .whatsapp-button svg {
+            margin-right: 10px;
+            width: 24px;
+            height: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Advanced Geospatial Analysis: Unsupervised Classification Workflow</h1>
+            <p>A comprehensive guide detailing the process of performing unsupervised Land Use/Land Cover (LULC) classification using ENVI software, and subsequently refining and visualizing the results within ArcMap. This methodology is crucial for dynamic environmental monitoring and land management studies in regions like Kericho, Kenya.</p>
+        </header>
+
+        <section class="section">
+            <h2>Part 1: Unsupervised Classification in ENVI</h2>
+            <p>This section outlines the initial phase of image processing, focusing on how raw satellite imagery is transformed into thematic land cover maps using ENVI's robust unsupervised classification algorithms.</p>
+
+            <div class="step">
+                <h3>Step 1: Initiating ENVI Software</h3>
+                <p>Begin by launching the ENVI software on your computing device. For optimal compatibility and to facilitate seamless integration with ArcMap for subsequent cartographic refinements, it is highly recommended to use the <span class="highlight">32-bit version of ENVI 5.3</span>. This specific version provides critical export functionalities that streamline the workflow between the two platforms.</p>
+                <img src="images/1.png" alt="Opening ENVI 5.3 (32-bit)">
+                <p class="caption">Figure 1: Locating and launching the ENVI 5.3 (32-bit) application through the system search interface.</p>
+            </div>
+
+            <div class="step">
+                <h3>Step 2: Importing Satellite Imagery into ENVI</h3>
+                <p>Upon successful launch, the ENVI graphical user interface will appear. To load your satellite imagery for analysis, navigate to the menu bar and select <span class="highlight">File > Open</span>. This action will prompt a file browser, allowing you to locate and select your desired image file. ENVI supports a variety of common raster formats, including <span class="highlight">.TIF, .IMG, and .OVR</span> files.</p>
+                <img src="images/2.png" alt="ENVI Open File Interface">
+                <p class="caption">Figure 2: The ENVI main interface, illustrating the "File" menu and the "Open" option selected to import data.</p>
+                <img src="images/3.png" alt="Browse for Image File in ENVI">
+                <p class="caption">Figure 3: A file explorer window demonstrating the selection of a Landsat 8 image for Kericho County (e.g., "KERICHO COUNTY FROM 2015-01-01 TO 2015-12-31 LANDSAT8").</p>
+            </div>
+
+            <div class="step">
+                <h3>Step 3: Accessing the Classification Workflow</h3>
+                <p>Once the image is successfully loaded, it will be rendered within the ENVI viewport. For instance, the Kericho Landsat 8 image from 2015 is now ready for processing. To initiate the unsupervised classification process, direct your attention to the <span class="highlight">ENVI Toolbox</span>, typically situated in the upper-right section of the interface. Expand the <span class="highlight">Classification</span> category, and then select <span class="highlight">Classification Workflow</span> to proceed.</p>
+                <img src="images/4.png" alt="Loaded Image and Classification Workflow Selection">
+                <p class="caption">Figure 4: The ENVI environment showing the loaded image and the highlighted path to the "Classification Workflow" within the Toolbox.</p>
+            </div>
+
+            <div class="step">
+                <h3>Step 4: Defining Input and Classification Method</h3>
+                <p>The "File Selection" dialogue will appear, where you must confirm that the correct input raster file is chosen for classification. Subsequently, you will be presented with the "Classification Type" window. A key characteristic of unsupervised classification is its independence from predefined training samples; the algorithm autonomously groups pixels based on their spectral properties. Therefore, select the <span class="highlight">"No Training Data"</span> option and proceed to the next step.</p>
+                <img src="images/5.png" alt="File Selection and No Training Data Option">
+                <p class="caption">Figure 5: Specifying the input file and selecting "No Training Data" for unsupervised classification.</p>
+            </div>
+
+            <div class="step">
+                <h3>Step 5: Specifying Number of Classes with ISODATA Parameters</h3>
+                <p>In the "Unsupervised Classification ISODATA Parameters" window, you are required to define the desired number of thematic classes (or clusters) that the ISODATA algorithm will attempt to identify within the imagery. In this specific case, <span class="highlight">seven classes were assigned</span>. This choice accounts for the possibility that two of these initial clusters might represent "Unclassified" or "No-data" regions, leaving a more manageable number of meaningful land cover categories for subsequent analysis.</p>
+                <img src="images/6.png" alt="ISODATA Parameters - Number of Classes">
+                <p class="caption">Figure 6: The "ISODATA Parameters" window, showing the input field for "Number of Classes" set to 7.</p>
+            </div>
+
+            <div class="step">
+                <h3>Step 6: Refining Classification Results (Cleanup)</h3>
+                <p>Once the unsupervised classification process concludes, the image with its extracted thematic classes will be displayed. To enhance the visual quality and spatial coherence of the classification, the "Cleanup" window provides options for refinement. This includes enabling <span class="highlight">"Enable Smoothing"</span> and <span class="highlight">"Enable Aggregation"</span>. For smoothing, a filter matrix such as a $7 \times 7$ kernel was applied, which helps in reducing salt-and-pepper noise and producing more generalized land cover patches.</p>
+                <img src="images/7.png" alt="Cleanup - Refine Results">
+                <p class="caption">Figure 7: The "Cleanup" interface, illustrating the options for refining the classification output, including smoothing and aggregation parameters.</p>
+            </div>
+
+            <div class="step">
+                <h3>Step 7: Exporting Classification Outputs</h3>
+                <p>After the refinement process, the "cleaned" image can be exported for further manipulation and cartographic production in other geospatial software, notably ArcMap. Select the <span class="highlight">"Export Classification Image"</span> option and specify your preferred output format (e.g., ENVI) and the desired filename and directory. Additionally, the classified features can be exported as <span class="highlight">"Classification Vectors"</span> (e.g., in Shapefile format), which provides vector data suitable for detailed GIS analysis.</p>
+                <img src="images/8.png" alt="Export Save Results">
+                <p class="caption">Figure 8: The "Export Save Results" window, showing options for exporting both raster classification images and vector features.</p>
+                <img src="images/9.png" alt="Exporting Results Progress">
+                <p class="caption">Figure 9: A progress bar indicating the ongoing export of the classification results to the specified output folder.</p>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Part 2: Refinement and Cartographic Enhancements in ArcMap</h2>
+            <p>This section details the critical steps taken in ArcMap to transform the raw classified output into a polished, cartographically sound LULC map, including reclassification and symbology adjustments.</p>
+
+            <div class="step">
+                <h3>Step 1: Importing Classified Image into ArcMap</h3>
+                <p>With the classification results successfully exported from ENVI, the subsequent step involves adding this classified image to the ArcMap viewport. This is achieved by using the "Add Data" tool within ArcMap and navigating to the location where your exported `.dat` (or other raster format) file is saved.</p>
+                <img src="images/A1.png" alt="Adding Exported Image to ArcMap">
+                <p class="caption">Figure A1: The ArcMap interface, demonstrating the process of adding the exported classified image (e.g., `demo.dat`) to the map document.</p>
+            </div>
+
+            <div class="step">
+                <h3>Step 2: Initial Observation of Unclassified Regions</h3>
+                <p>Upon adding the image to ArcMap, you will likely observe that certain areas are initially designated as "Unclassified". These unclassified pixels typically represent areas that the unsupervised algorithm could not confidently assign to a distinct spectral class, or they might be background noise. Identifying these areas is crucial for the subsequent reclassification process.</p>
+                <img src="images/A2.png" alt="Image in ArcMap with Unclassified Classes">
+                <p class="caption">Figure A2: The classified image as it first appears in ArcMap, highlighting the presence of initial unclassified regions.</p>
+            </div>
+
+            <div class="step">
+                <h3>Step 3: Relating Thematic Classes and Symbology Adjustments</h3>
+                <p>To establish meaningful land cover categories, access the image's properties in ArcMap, specifically the <span class="highlight">Symbology</span> tab. Here, you can visually correlate the spectrally derived unsupervised classes with the true color composite of the original raw Landsat 8 image. This comparative analysis allows for the assignment of appropriate real-world land cover labels to the classified clusters. A practical first step is to render the "Unclassified" categories with "no color" to clearly delineate the actual classified areas for visual assessment.</p>
+                <img src="images/A3.png" alt="ArcMap Properties - Symbology">
+                <p class="caption">Figure A3: ArcMap Layer Properties window, illustrating how symbology can be adjusted in relation to the original true color composite image for accurate class identification.</p>
+                <img src="images/A4.png" alt="Unclassified Classes Turned to No Color">
+                <p class="caption">Figure A4: The classified image in ArcMap after applying a "no color" symbology to the unclassified pixels, improving the clarity of the defined land cover types.</p>
+            </div>
+
+            <div class="step">
+                <h3>Step 4: Final Classification and Cartographic Naming</h3>
+                <p>Based on the visual interpretation and correlation with the reference imagery, the initial unsupervised classes are refined into definitive Land Use/Land Cover categories. For this study, five distinct LULC classes were identified and assigned specific colors for cartographic representation.</p>
+                <p>The final mapping scheme for the LULC categories is presented below:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Color Legend</th>
+                            <th>LULC Category</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span style="background-color: #7CFC00; display: inline-block; width: 20px; height: 20px; vertical-align: middle; margin-right: 5px; border: 1px solid #ccc;"></span> Medium Apple</td>
+                            <td>Vegetation</td>
+                        </tr>
+                        <tr>
+                            <td><span style="background-color: #008080; display: inline-block; width: 20px; height: 20px; vertical-align: middle; margin-right: 5px; border: 1px solid #ccc;"></span> Peacock Green</td>
+                            <td>Forest</td>
+                        </tr>
+                        <tr>
+                            <td><span style="background-color: #FFCC99; display: inline-block; width: 20px; height: 20px; vertical-align: middle; margin-right: 5px; border: 1px solid #ccc;"></span> Cantaloupe</td>
+                            <td>Bare</td>
+                        </tr>
+                        <tr>
+                            <td><span style="background-color: #FF0000; display: inline-block; width: 20px; height: 20px; vertical-align: middle; margin-right: 5px; border: 1px solid #ccc;"></span> Fire Red</td>
+                            <td>Built-up</td>
+                        </tr>
+                        <tr>
+                            <td><span style="background-color: #9ACD32; display: inline-block; width: 20px; height: 20px; vertical-align: middle; margin-right: 5px; border: 1px solid #ccc;"></span> Lemon Grass</td>
+                            <td>Other Agri-land</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <img src="images/A5.png" alt="Final Classified Map in ArcMap">
+                <p class="caption">Figure A5: The finalized LULC map in ArcMap, showing the distinct five classified categories after refinement and renaming.</p>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Conclusion & Application</h2>
+            <p>
+                This meticulously documented workflow provides a robust framework for performing unsupervised classification using ENVI and subsequent cartographic refinement in ArcMap. This comprehensive process, from initial image acquisition and classification in ENVI to the nuanced reclassification and symbology adjustments in ArcMap, was systematically applied to satellite imagery of Kericho, Kenya, spanning the years 1985, 1995, 2005, 2015, and 2025. The resulting Land Use/Land Cover maps serve as invaluable tools for monitoring environmental changes, urban expansion, and agricultural dynamics over time within the region.
+            </p>
+        </section>
+
+        <section class="whatsapp-button-container">
+            <a href="https://wa.me/254101370035?text=Hello%2C%20I%20have%20a%20question%20about%20your%20unsupervised%20classification%20procedures." class="whatsapp-button" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                    <path d="M12.04 2c-5.45 0-9.91 4.46-9.91 9.91 0 1.75.5 3.44 1.45 4.96L2 22l5.25-1.38c1.45.79 3.09 1.25 4.79 1.25 5.45 0 9.91-4.46 9.91-9.91S17.49 2 12.04 2zm.05 1.5c4.61 0 8.38 3.77 8.38 8.38 0 4.61-3.77 8.38-8.38 8.38-1.57 0-3.1-.43-4.41-1.18l-.3-.17-3.13.82.83-3.04-.2-.3c-.86-1.47-1.32-3.16-1.32-4.93 0-4.61 3.77-8.38 8.38-8.38zm-3.41 4.72c-.22 0-.44.07-.63.2-.23.16-.65.64-.65 1.55 0 .91.67 1.76.77 1.88.1.12 1.34 2.15 3.25 2.94 1.91.79 2.3 1.05 2.73.97.43-.09 1.34-.55 1.54-1.09.2-.53.2-1.02.14-1.15-.06-.13-.23-.2-.48-.32-.25-.12-1.54-.76-1.78-.85-.24-.09-.43-.03-.63.2-.2.24-.76.97-1.02 1.25-.26.28-.5.31-.92.1-.42-.2-1.76-.65-2.22-1.4-.46-.75-.05-1.16.32-1.45.3-.24.4-.38.53-.6.13-.22.07-.41-.02-.57-.09-.16-.65-1.54-.89-2.1c-.25-.57-.49-.48-.65-.48z"/>
+                </svg>
+                Chat on WhatsApp
+            </a>
+        </section>
+
+        <footer>
+            <p>Created by: KIMATHI JORAM</p>
+            <p>&copy; 2025. All rights reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>
