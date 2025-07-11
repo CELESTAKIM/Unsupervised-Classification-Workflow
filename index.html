@@ -3,6 +3,432 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unsupervised LULC Classification Workflow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Global Styles */
+        :root {
+            --primary-blue: #007bff;
+            --dark-blue: #0056b3;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e9ecef;
+            --text-dark: #343a40;
+            --text-medium: #6c757d;
+            --whatsapp-green: #25D366;
+            --whatsapp-green-dark: #1DA851;
+            --shadow-light: rgba(0, 0, 0, 0.08);
+            --shadow-medium: rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.7;
+            margin: 0;
+            padding-bottom: 100px;
+            background-color: var(--light-gray);
+            color: var(--text-dark);
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1f4287 0%, #2196f3 100%);
+            color: white;
+            text-align: center;
+            padding: 3rem 1rem;
+            box-shadow: 0 4px 15px var(--shadow-medium);
+            animation: fadeIn 1s ease-out;
+        }
+
+        header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.8em;
+            margin: 0 0 0.5rem 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        main {
+            max-width: 960px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .workflow-section {
+            background-color: white;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px var(--shadow-light);
+            transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+            border-left: 8px solid var(--primary-blue);
+            animation: slideIn 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .workflow-section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px var(--shadow-medium);
+        }
+
+        .step-heading {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8em;
+            color: var(--dark-blue);
+            margin-top: 0;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+
+        .step-description {
+            font-size: 1.05em;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+        }
+
+        .image-container {
+            position: relative;
+            margin: 1.5rem 0;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--shadow-light);
+            transition: transform 0.3s ease-out;
+            pointer-events: none;
+        }
+
+        img:hover {
+            transform: scale(1.01);
+        }
+
+        .image-caption {
+            font-size: 0.9em;
+            color: var(--text-medium);
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+            background-color: var(--medium-gray);
+            color: var(--text-medium);
+            font-size: 0.9em;
+            border-top: 1px solid #dee2e6;
+        }
+
+        #whatsapp-button {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background-color: var(--whatsapp-green);
+            color: white;
+            font-size: 28px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px var(--shadow-medium);
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease-in-out;
+        }
+
+        #whatsapp-button:hover {
+            background-color: var(--whatsapp-green-dark);
+            transform: scale(1.1) translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+
+        #chat-box {
+            display: none;
+            position: fixed;
+            bottom: 100px;
+            right: 25px;
+            background: white;
+            width: 320px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px var(--shadow-medium);
+            z-index: 999;
+            overflow: hidden;
+            animation: slideInRight 0.4s ease-out forwards;
+        }
+
+        .chat-header {
+            background: var(--whatsapp-green);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 700;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        .chat-body {
+            padding: 20px;
+        }
+
+        .chat-body textarea {
+            width: calc(100% - 20px);
+            height: 120px;
+            resize: vertical;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            font-size: 1em;
+            line-height: 1.5;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .chat-body textarea:focus {
+            border-color: var(--primary-blue);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1), 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        .chat-body button {
+            margin-top: 15px;
+            float: right;
+            background: var(--whatsapp-green);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.05em;
+            font-weight: 600;
+            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .chat-body button:hover {
+            background-color: var(--whatsapp-green-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        }
+
+        .chat-body button:active {
+            transform: translateY(0);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @media (max-width: 768px) {
+            header h1 { font-size: 2em; }
+            .workflow-section { padding: 1.5rem; margin-bottom: 1.5rem; }
+            .step-heading { font-size: 1.5em; }
+            #whatsapp-button { bottom: 15px; right: 15px; width: 50px; height: 50px; font-size: 24px; }
+            #chat-box { bottom: 80px; right: 15px; width: calc(100% - 30px); max-width: 320px; }
+            .chat-body textarea { height: 100px; }
+        }
+    </style>
+</head>
+<body oncontextmenu="return false">
+    <header>
+        <h1>Unsupervised Land Use/Land Cover Classification Workflow</h1>
+        <p>A detailed workflow for unsupervised classification using ENVI and ArcMap, focusing on digital image analysis for geospatial applications.</p>
+    </header>
+
+    <main id="steps"></main>
+
+    <footer>
+        <p>Developed by: Kimathi Joram</p>
+        <p>© 2025. All rights reserved.</p>
+    </footer>
+
+    <div id="whatsapp-button" title="Contact via WhatsApp">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M12.04 2c-5.45 0-9.91 4.46-9.91 9.91 0 1.75.5 3.44 1.45 4.96L2 22l5.25-1.38c1.45.79 3.09 1.25 4.79 1.25 5.45 0 9.91-4.46 9.91-9.91S17.49 2 12.04 2zm.05 1.5c4.61 0 8.38 3.77 8.38 8.38 0 4.61-3.77 8.38-8.38 8.38-1.57 0-3.1-.43-4.41-1.18l-.3-.17-3.13.82.83-3.04-.2-.3c-.86-1.47-1.32-3.16-1.32-4.93 0-4.61 3.77-8.38 8.38-8.38zm-3.41 4.72c-.22 0-.44.07-.63.2-.23.16-.65.64-.65 1.55 0 .91.67 1.76.77 1.88.1.12 1.34 2.15 3.25 2.94 1.91.79 2.3 1.05 2.73.97.43-.09 1.34-.55 1.54-1.09.2-.53.2-1.02.14-1.15-.06-.13-.23-.2-.48-.32-.25-.12-1.54-.76-1.78-.85-.24-.09-.43-.03-.63.2-.2.24-.76.97-1.02 1.25-.26.28-.5.31-.92.1-.42-.2-1.76-.65-2.22-1.4-.46-.75-.05-1.16.32-1.45.3-.24.4-.38.53-.6.13-.22.07-.41-.02-.57-.09-.16-.65-1.54-.89-2.1c-.25-.57-.49-.48-.65-.48z"/>
+        </svg>
+    </div>
+    <div id="chat-box">
+        <div class="chat-header">Contact via WhatsApp</div>
+        <div class="chat-body">
+            <textarea id="chat-message" placeholder="Type your message here..."></textarea>
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const steps = [
+            {
+                title: "Step 1: Launching ENVI for Geospatial Processing",
+                description: "Open ENVI (preferably 32-bit for compatibility with older datasets) to process multispectral or hyperspectral imagery. Ensure the system supports ENVI's requirements for handling large raster datasets used in remote sensing analysis.",
+                images: [
+                    { src: "1.png", caption: "ENVI interface ready for geospatial image processing." }
+                ]
+            },
+            {
+                title: "Step 2: Importing Satellite Imagery",
+                description: "Navigate to File → Open and select your satellite image (e.g., Landsat 8 image for Kericho, 2015). ENVI supports formats like TIFF, IMG, or ENVI native formats. This step loads the raster data, enabling spectral analysis of pixel values.",
+                images: [
+                    { src: "2.png", caption: "Selecting the satellite image in ENVI." },
+                    { src: "3.png", caption: "File browser showing supported raster formats." }
+                ]
+            },
+            {
+                title: "Step 3: Visualizing Image Data",
+                description: "The loaded image appears in ENVI's viewport, typically as an RGB composite of spectral bands. Verify spatial resolution, band wavelengths, and georeferencing to ensure the data is suitable for unsupervised classification.",
+                images: [
+                    { src: "4.png", caption: "Multispectral image displayed in ENVI viewport." }
+                ]
+            },
+            {
+                title: "Step 4: Accessing the Classification Workflow",
+                description: "In the ENVI Toolbox, select Classification → Workflow to start unsupervised classification. This tool uses algorithms like ISODATA to cluster pixels based on spectral signatures without requiring training data.",
+                images: [
+                    { src: "5.png", caption: "ENVI Toolbox with Classification Workflow selected." }
+                ]
+            },
+            {
+                title: "Step 5: Configuring Unsupervised Classification Parameters",
+                description: "In the Classification Workflow, select 'No Training Data' for unsupervised classification. Choose the ISODATA algorithm, which groups pixels into clusters based on spectral similarity. Confirm the input file and proceed to set parameters.",
+                images: [
+                    { src: "6.png", caption: "Classification Workflow setup for unsupervised method." },
+                    { src: "7.png", caption: "Confirming input file for classification." }
+                ]
+            },
+            {
+                title: "Step 6: Defining Output Classes",
+                description: "In the ISODATA Parameters window, set the number of classes (e.g., 7) to represent land cover types like forest, water, or urban areas. This accounts for potential unclassified pixels. The algorithm iteratively clusters pixels based on their spectral reflectance.",
+                images: [
+                    { src: "8.png", caption: "Setting 7 classes in ISODATA parameters." },
+                    { src: "9.png", caption: "Preview of initial spectral clusters." }
+                ]
+            },
+            {
+                title: "Step 7: Refining and Exporting Classified Data",
+                description: "After clustering, apply a 7x7 smoothing kernel to reduce noise and enhance spatial coherence in the classified image. Export the smoothed raster to a folder in a format like TIFF, ready for further analysis in ArcMap.",
+                images: [
+                    { src: "10.png", caption: "Initial classified image before smoothing." },
+                    { src: "11.png", caption: "Smoothed classification with 7x7 kernel applied." },
+                    { src: "12.png", caption: "Exporting the classified raster to a folder." }
+                ]
+            },
+            {
+                title: "Step 8: Importing Classified Image into ArcMap",
+                description: "Open ArcMap and add the exported classified raster. Ensure the coordinate system aligns with the original image for accurate spatial analysis and cartographic visualization.",
+                images: [
+                    { src: "A1.png", caption: "Adding the classified image to ArcMap." }
+                ]
+            },
+            {
+                title: "Step 9: Addressing Unclassified Regions in ArcMap",
+                description: "In ArcMap, inspect the classified image for unclassified pixels, which may result from spectral ambiguity. Assign 'no color' to these areas in the symbology settings to focus on defined land cover classes.",
+                images: [
+                    { src: "A2.png", caption: "Classified image with unclassified pixels highlighted." }
+                ]
+            },
+            {
+                title: "Step 10: Refining Symbology and Class Definition",
+                description: "In ArcMap's Properties → Symbology, apply a custom color ramp or True Color relation to visualize land cover classes (e.g., vegetation, water, urban). Reference the original RGB composite to assign meaningful labels to each class.",
+                images: [
+                    { src: "A3.png", caption: "Symbology settings in ArcMap for class visualization." },
+                    { src: "A4.png", caption: "True Color visualization of classified land cover classes." }
+                ]
+            },
+            {
+                title: "Step 11: Final Land Use/Land Cover Mapping",
+                description: "Finalize the LULC map by interpreting the 5 distinct land cover classes derived from unsupervised classification. This methodology was applied to Landsat images from 1985, 1995, 2005, 2015, and 2025 for Kericho, Kenya, enabling temporal analysis of land cover changes.",
+                images: [
+                    { src: "A5.png", caption: "Final LULC map with 5 interpreted land cover classes." }
+                ]
+            }
+        ];
+
+        const stepsContainer = document.getElementById("steps");
+
+        steps.forEach((step, index) => {
+            const section = document.createElement("section");
+            section.className = "workflow-section";
+            section.style.animationDelay = `${index * 0.2}s`; // Staggered animation
+
+            const heading = document.createElement("h2");
+            heading.className = "step-heading";
+            heading.textContent = step.title;
+            section.appendChild(heading);
+
+            const description = document.createElement("p");
+            description.className = "step-description";
+            description.textContent = step.description;
+            section.appendChild(description);
+
+            step.images.forEach(img => {
+                const container = document.createElement("div");
+                container.className = "image-container";
+                const image = document.createElement("img");
+                image.src = `images/${img.src}`;
+                image.alt = img.caption;
+                image.onerror = () => {
+                    image.src = "images/placeholder.png"; // Fallback image
+                    image.alt = "Image not found";
+                };
+                container.appendChild(image);
+                const caption = document.createElement("p");
+                caption.className = "image-caption";
+                caption.textContent = img.caption;
+                container.appendChild(caption);
+                section.appendChild(container);
+            });
+
+            stepsContainer.appendChild(section);
+        });
+
+        document.getElementById("whatsapp-button").onclick = () => {
+            const chat = document.getElementById("chat-box");
+            chat.style.display = chat.style.display === "block" ? "none" : "block";
+        };
+
+        function sendMessage() {
+            const msg = document.getElementById("chat-message").value.trim();
+            if (msg) {
+                const url = `https://wa.me/254101370035?text=${encodeURIComponent(msg)}`;
+                window.open(url, '_blank');
+                document.getElementById("chat-message").value = '';
+                document.getElementById("chat-box").style.display = "none";
+            } else {
+                alert("Please type a message before sending.");
+            }
+        }
+    </script>
+</body>
+</html>
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Geospatial Analysis: Unsupervised Classification Workflow</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -428,4 +854,4 @@
         </footer>
     </div>
 </body>
-</html>
+</html> -->
